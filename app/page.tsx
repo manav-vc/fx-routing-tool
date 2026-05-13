@@ -117,8 +117,11 @@ export default function Home() {
             <div className="flex flex-wrap items-center gap-2">
               <span className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600">
                 {quote?.generatedAt
-                  ? `Updated ${new Date(quote.generatedAt).toLocaleTimeString()}`
-                  : "Waiting for first quote"}
+                  ? `Quote updated ${new Date(quote.generatedAt).toLocaleTimeString([], {
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })}`
+                  : "No quote yet"}
               </span>
               <button
                 onClick={fetchQuote}
@@ -131,7 +134,7 @@ export default function Home() {
                 ) : (
                   <RefreshCw className="h-4 w-4" aria-hidden />
                 )}
-                Refresh
+                Refresh quote
               </button>
             </div>
           </div>
