@@ -15,10 +15,13 @@ import {
 } from "lucide-react";
 import {
   Background,
+  BaseEdge,
   Controls,
+  EdgeLabelRenderer,
   MarkerType,
   ReactFlow,
   type Edge,
+  type EdgeProps,
   type Node,
 } from "@xyflow/react";
 import {
@@ -43,6 +46,17 @@ type ScaleChartPoint = {
   deliveredPerSource: number | null;
   label: string;
   routeChanged: boolean;
+};
+
+type ParallelEdgeData = {
+  color: string;
+  highlighted: boolean;
+  label: string;
+  offset: number;
+};
+
+const graphEdgeTypes = {
+  parallelProvider: ParallelProviderEdge,
 };
 
 export default function Home() {
@@ -638,6 +652,7 @@ function GraphPanel({
         {nodes.length > 0 ? (
           <ReactFlow
             colorMode="light"
+            edgeTypes={graphEdgeTypes}
             edges={edges}
             fitView
             maxZoom={1.4}
@@ -685,8 +700,8 @@ function buildGraph(routes: RouteQuote[], bestRoute: RouteQuote | null): { nodes
     {
       source: string;
       target: string;
-      providers: Set<string>;
       bestProvider: string | null;
+      providers: string[];
     }
   >();
 
@@ -696,40 +711,104 @@ function buildGraph(routes: RouteQuote[], bestRoute: RouteQuote | null): { nodes
       const existing = graphEdges.get(id) ?? {
         source: leg.from,
         target: leg.to,
-        providers: new Set<string>(),
         bestProvider: null,
+        providers: [],
       };
-      existing.providers.add(leg.providerName);
+      if (!existing.providers.includes(leg.providerName)) {
+        existing.providers.push(leg.providerName);
+      }
       existing.bestProvider = bestLegByPair.get(id) ?? existing.bestProvider;
       graphEdges.set(id, existing);
     }
   }
 
-  const edges = [...graphEdges.entries()].map(([id, edge]) => {
-    const highlighted = Boolean(edge.bestProvider);
-    const providers = [...edge.providers];
-    const remainingCount = edge.bestProvider
-      ? providers.filter((provider) => provider !== edge.bestProvider).length
-      : Math.max(providers.length - 1, 0);
+  const edges = [...graphEdges.entries()].flatMap(([pairId, edge]) => {
+    const middle = (edge.providers.length - 1) / 2;
 
-    return {
-      id,
-      source: edge.source,
-      target: edge.target,
-      label: edge.bestProvider
-        ? `${edge.bestProvider}${remainingCount > 0 ? ` +${remainingCount}` : ""}`
-        : providers.length > 1
-          ? `${providers[0]} +${providers.length - 1}`
-          : providers[0],
-      markerEnd: { type: MarkerType.ArrowClosed },
-      style: {
-        stroke: highlighted ? "#0f766e" : "#94a3b8",
-        strokeWidth: highlighted ? 3 : 1.6,
-      },
-    };
+    return edge.providers.map((provider, index) => {
+      const highlighted = provider === edge.bestProvider;
+      const color = highlighted ? "#0f766e" : "#64748b";
+      const offset = (index - middle) * 24;
+
+      return {
+        id: `${pairId}-${provider}`,
+        type: "parallelProvider",
+        source: edge.source,
+        target: edge.target,
+        data: {
+          color,
+          highlighted,
+          label: provider,
+          offset,
+        },
+        markerEnd: { type: MarkerType.ArrowClosed, color },
+      };
+    });
   });
 
   return { nodes, edges };
+}
+
+function ParallelProviderEdge({
+  id,
+  data,
+  markerEnd,
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+}: EdgeProps) {
+  const edgeData = data as ParallelEdgeData | undefined;
+  const color = edgeData?.color ?? "#64748b";
+  const highlighted = edgeData?.highlighted ?? false;
+  const label = edgeData?.label ?? "";
+  const offset = edgeData?.offset ?? 0;
+  const dx = targetX - sourceX;
+  const dy = targetY - sourceY;
+  const length = Math.hypot(dx, dy) || 1;
+  const normalX = -dy / length;
+  const normalY = dx / length;
+  const sourceOffsetX = sourceX + normalX * offset * 0.18;
+  const sourceOffsetY = sourceY + normalY * offset * 0.18;
+  const targetOffsetX = targetX + normalX * offset * 0.18;
+  const targetOffsetY = targetY + normalY * offset * 0.18;
+  const controlOffsetX = normalX * offset;
+  const controlOffsetY = normalY * offset;
+  const path = [
+    `M ${sourceOffsetX} ${sourceOffsetY}`,
+    `C ${sourceX + dx * 0.35 + controlOffsetX} ${sourceY + dy * 0.35 + controlOffsetY}`,
+    `${sourceX + dx * 0.65 + controlOffsetX} ${sourceY + dy * 0.65 + controlOffsetY}`,
+    `${targetOffsetX} ${targetOffsetY}`,
+  ].join(" ");
+  const labelX = sourceX + dx * 0.5 + controlOffsetX;
+  const labelY = sourceY + dy * 0.5 + controlOffsetY;
+
+  return (
+    <>
+      <BaseEdge
+        id={id}
+        markerEnd={markerEnd}
+        path={path}
+        style={{
+          stroke: color,
+          strokeWidth: highlighted ? 3 : 1.8,
+        }}
+      />
+      <EdgeLabelRenderer>
+        <div
+          className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold shadow-sm"
+          style={{
+            color,
+            pointerEvents: "all",
+            position: "absolute",
+            transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+          }}
+        >
+          {label}
+        </div>
+      </EdgeLabelRenderer>
+    </>
+  );
 }
 
 function SkeletonRoutes() {
