@@ -74,19 +74,20 @@ export async function fetchLiveProviderEdges(
     .filter((edge): edge is QuoteEdge => Boolean(edge));
 
   const rejectedCount = baseResults.filter((result) => result.status === "rejected").length;
+  const rejectionMessages = baseResults
+    .filter((result): result is PromiseRejectedResult => result.status === "rejected")
+    .map((result) => errorMessage(result.reason));
 
   if (edges.length === 0) {
-    const firstError = baseResults.find((result) => result.status === "rejected");
-    const message =
-      firstError?.status === "rejected"
-        ? firstError.reason instanceof Error
-          ? firstError.reason.message
-          : "Provider returned no usable quotes"
-        : "Provider returned no usable quotes";
-
     return {
       edges,
-      status: status(provider.name, "unavailable", message, edges.length, started),
+      status: status(
+        provider.name,
+        "unavailable",
+        rejectionMessages[0] ?? "Provider returned no usable quotes",
+        edges.length,
+        started,
+      ),
     };
   }
 
@@ -96,7 +97,7 @@ export async function fetchLiveProviderEdges(
       provider.name,
       rejectedCount > 0 ? "degraded" : "available",
       rejectedCount > 0
-        ? `${edges.length} pairs normalized; ${rejectedCount} base requests failed`
+        ? `${edges.length} pairs normalized; ${rejectedCount} base request${rejectedCount === 1 ? "" : "s"} failed (${summarizeErrors(rejectionMessages)})`
         : `${edges.length} pairs normalized`,
       edges.length,
       started,
@@ -182,6 +183,10 @@ async function fetchJsonWithTimeout(url: string, fetcher: Fetcher, timeoutMs: nu
     });
 
     if (!response.ok) {
+      if (response.status === 429) {
+        throw new Error("Rate limited (HTTP 429)");
+      }
+
       throw new Error(`HTTP ${response.status} from ${url}`);
     }
 
@@ -235,4 +240,13 @@ function status(
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function errorMessage(reason: unknown): string {
+  return reason instanceof Error ? reason.message : "Provider request failed";
+}
+
+function summarizeErrors(messages: string[]): string {
+  const uniqueMessages = [...new Set(messages)];
+  return uniqueMessages.slice(0, 2).join("; ");
 }
