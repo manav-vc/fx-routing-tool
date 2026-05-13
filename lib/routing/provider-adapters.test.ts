@@ -4,6 +4,7 @@ import {
   normalizeExchangeRateApiRate,
   normalizeFawazRate,
   normalizeFrankfurterRate,
+  resetProviderResilienceState,
 } from "./provider-adapters";
 import type { ProviderConfig } from "./types";
 
@@ -36,6 +37,31 @@ const allFiatRates = {
 };
 
 describe("provider adapters", () => {
+  it("retries transient provider failures before returning normalized edges", async () => {
+    resetProviderResilienceState();
+    const attemptsByUrl = new Map<string, number>();
+    const fetcher: typeof fetch = async (input) => {
+      const url = String(input);
+      const attempts = attemptsByUrl.get(url) ?? 0;
+      attemptsByUrl.set(url, attempts + 1);
+
+      if (attempts === 0) {
+        return new Response("temporary outage", { status: 503 });
+      }
+
+      return Response.json(allFiatRates);
+    };
+
+    const result = await fetchLiveProviderEdges(betaBankProvider, fetcher, {
+      retryDelayMs: 0,
+    });
+
+    expect(result.edges.length).toBeGreaterThan(0);
+    expect(result.status.state).toBe("available");
+    expect(result.status.message).toContain("retried");
+    expect([...attemptsByUrl.values()].every((attempts) => attempts === 2)).toBe(true);
+  });
+
   it("normalizes a Frankfurter rate response", () => {
     expect(
       normalizeFrankfurterRate(
@@ -78,6 +104,7 @@ describe("provider adapters", () => {
   });
 
   it("marks a live provider as degraded when one base request is rate-limited", async () => {
+    resetProviderResilienceState();
     const fetcher: typeof fetch = async (input) => {
       const url = String(input);
 
@@ -88,7 +115,9 @@ describe("provider adapters", () => {
       return Response.json(allFiatRates);
     };
 
-    const result = await fetchLiveProviderEdges(betaBankProvider, fetcher);
+    const result = await fetchLiveProviderEdges(betaBankProvider, fetcher, {
+      retryDelayMs: 0,
+    });
 
     expect(result.edges.length).toBeGreaterThan(0);
     expect(result.status.state).toBe("degraded");
@@ -96,6 +125,7 @@ describe("provider adapters", () => {
   });
 
   it("marks a live provider as unavailable when all base requests time out", async () => {
+    resetProviderResilienceState();
     const fetcher: typeof fetch = (_input, init) =>
       new Promise<Response>((_resolve, reject) => {
         init?.signal?.addEventListener("abort", () => {
@@ -105,7 +135,10 @@ describe("provider adapters", () => {
         });
       });
 
-    const result = await fetchLiveProviderEdges(betaBankProvider, fetcher, 1);
+    const result = await fetchLiveProviderEdges(betaBankProvider, fetcher, {
+      timeoutMs: 1,
+      retryDelayMs: 0,
+    });
 
     expect(result.edges).toHaveLength(0);
     expect(result.status.state).toBe("unavailable");
@@ -113,6 +146,7 @@ describe("provider adapters", () => {
   });
 
   it("returns no edges instead of throwing when a provider omits requested pairs", async () => {
+    resetProviderResilienceState();
     const fetcher: typeof fetch = async () =>
       Response.json({
         result: "success",
@@ -124,5 +158,46 @@ describe("provider adapters", () => {
     expect(result.edges).toHaveLength(0);
     expect(result.status.state).toBe("unavailable");
     expect(result.status.message).toContain("no usable quotes");
+  });
+
+  it("falls back to stale cached edges when a provider later fails", async () => {
+    resetProviderResilienceState();
+    const successfulFetch: typeof fetch = async () => Response.json(allFiatRates);
+    const failedFetch: typeof fetch = async () => new Response("rate limit", { status: 429 });
+
+    const fresh = await fetchLiveProviderEdges(betaBankProvider, successfulFetch, {
+      retryDelayMs: 0,
+    });
+    const stale = await fetchLiveProviderEdges(betaBankProvider, failedFetch, {
+      retryDelayMs: 0,
+    });
+
+    expect(fresh.status.state).toBe("available");
+    expect(stale.edges).toHaveLength(fresh.edges.length);
+    expect(stale.status.state).toBe("degraded");
+    expect(stale.status.message).toContain("stale cached quotes");
+  });
+
+  it("opens a circuit after repeated full provider failures and skips new calls", async () => {
+    resetProviderResilienceState();
+    let callCount = 0;
+    const failedFetch: typeof fetch = async () => {
+      callCount += 1;
+      return new Response("provider down", { status: 503 });
+    };
+
+    await fetchLiveProviderEdges(betaBankProvider, failedFetch, { retryDelayMs: 0 });
+    await fetchLiveProviderEdges(betaBankProvider, failedFetch, { retryDelayMs: 0 });
+    await fetchLiveProviderEdges(betaBankProvider, failedFetch, { retryDelayMs: 0 });
+    const callsBeforeOpen = callCount;
+
+    const openCircuit = await fetchLiveProviderEdges(betaBankProvider, failedFetch, {
+      retryDelayMs: 0,
+    });
+
+    expect(openCircuit.edges).toHaveLength(0);
+    expect(openCircuit.status.state).toBe("unavailable");
+    expect(openCircuit.status.message).toContain("Circuit open");
+    expect(callCount).toBe(callsBeforeOpen);
   });
 });

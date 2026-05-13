@@ -31,6 +31,10 @@ The app does not require API keys. Live fiat quotes come from the free Frankfurt
 
 Each provider/currency pair is represented as a directed edge in a graph. For every leg, the source-currency fee is deducted first using `amount * fee_percent + fee_flat`, then the remaining amount is converted by that leg's rate. The router searches simple paths up to three legs, prevents repeated currencies, and ranks candidate routes by final delivered amount. The direct one-leg route is computed separately when available so each top route can show the difference versus the direct benchmark.
 
+## Real-world provider handling
+
+Live provider calls use a short timeout, retry transient failures once, and classify HTTP 429 responses as rate limits. Each provider has a warm in-memory stale-quote cache and a small circuit breaker: after repeated full-provider failures, the app temporarily skips fresh calls to that provider and either uses cached quotes with a degraded status or marks the provider unavailable. Missing pairs and malformed responses are ignored instead of crashing the route search, so the app can still return useful routes from other providers.
+
 ## AI tools used
 
 I used Codex/ChatGPT as a planning and implementation partner: extracting the PDF requirements, turning the assignment into a concrete product plan, designing the routing model, writing the initial TDD tests, checking API response shapes, and iterating on the dashboard UI. I also used it to keep the README aligned with the assignment prompt instead of only documenting how to run the app.
