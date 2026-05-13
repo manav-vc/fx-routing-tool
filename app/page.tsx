@@ -17,7 +17,6 @@ import {
   Background,
   Controls,
   MarkerType,
-  Position,
   ReactFlow,
   type Edge,
   type Node,
@@ -201,7 +200,7 @@ export default function Home() {
             </div>
             <div className="space-y-5">
               <ScalingPanel quote={quote} source={source} target={target} />
-              <GraphPanel routes={quote?.routes ?? []} target={target} />
+              <GraphPanel routes={quote?.routes ?? []} bestRoute={bestRoute} />
             </div>
           </section>
         </div>
@@ -621,50 +620,26 @@ function ScaleTooltip({
 
 function GraphPanel({
   routes,
-  target,
+  bestRoute,
 }: {
   routes: RouteQuote[];
-  target: string;
+  bestRoute: RouteQuote | null;
 }) {
-  const rankedRoutes = useMemo(() => routes.slice(0, 3), [routes]);
-  const { nodes, edges } = useMemo(() => buildGraph(rankedRoutes), [rankedRoutes]);
+  const { nodes, edges } = useMemo(() => buildGraph(routes, bestRoute), [bestRoute, routes]);
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
       <SectionHeader
         icon={<GitBranch className="h-4 w-4" aria-hidden />}
         title="Route graph"
-        detail="Top 3 ranked paths"
+        detail="Best path highlighted"
       />
-      {rankedRoutes.length > 0 ? (
-        <div className="mt-3 grid gap-2 md:grid-cols-3">
-          {rankedRoutes.map((route, index) => (
-            <div key={route.id} className="min-w-0 rounded-md bg-slate-50 p-2">
-              <div className="flex items-center justify-between gap-2">
-                <span
-                  className="rounded-md px-2 py-1 text-xs font-bold text-white"
-                  style={{ backgroundColor: routeGraphColor(index) }}
-                >
-                  #{index + 1}
-                </span>
-                <span className="truncate text-xs font-semibold text-slate-950">
-                  {formatMoney(route.finalAmount, target)}
-                </span>
-              </div>
-              <p className="mt-1 truncate text-xs text-slate-500" title={routeProviderLabel(route)}>
-                {routeProviderLabel(route)}
-              </p>
-            </div>
-          ))}
-        </div>
-      ) : null}
-      <div className="mt-4 h-96 overflow-hidden rounded-lg border border-slate-200">
+      <div className="mt-4 h-80 overflow-hidden rounded-lg border border-slate-200">
         {nodes.length > 0 ? (
           <ReactFlow
             colorMode="light"
             edges={edges}
             fitView
-            fitViewOptions={{ padding: 0.18 }}
             maxZoom={1.4}
             minZoom={0.4}
             nodes={nodes}
@@ -682,74 +657,79 @@ function GraphPanel({
   );
 }
 
-function buildGraph(routes: RouteQuote[]): { nodes: Node[]; edges: Edge[] } {
-  const nodes = routes.flatMap((route, routeIndex) =>
-    route.path.map((currency, currencyIndex) => {
-      const color = routeGraphColor(routeIndex);
+function buildGraph(routes: RouteQuote[], bestRoute: RouteQuote | null): { nodes: Node[]; edges: Edge[] } {
+  const currenciesInOrder = Array.from(new Set(routes.flatMap((route) => route.path)));
+  const maxDepthByCurrency = new Map<string, number>();
 
-      return {
-        id: graphNodeId(routeIndex, currencyIndex),
-        position: {
-          x: currencyIndex * 185,
-          y: routeIndex * 112,
-        },
-        data: { label: currencyIndex === 0 ? `#${routeIndex + 1} ${currency}` : currency },
-        sourcePosition: Position.Right,
-        targetPosition: Position.Left,
-        style: {
-          width: 86,
-          border: `2px solid ${color}`,
-          borderRadius: 8,
-          background: routeIndex === 0 ? "#ecfdf5" : "#ffffff",
-          color: "#0f172a",
-          fontSize: 12,
-          fontWeight: 700,
-        },
-      };
-    }),
+  for (const route of routes) {
+    route.path.forEach((currency, index) => {
+      maxDepthByCurrency.set(currency, Math.max(maxDepthByCurrency.get(currency) ?? 0, index));
+    });
+  }
+
+  const nodes = currenciesInOrder.map((currency, index) => ({
+    id: currency,
+    position: {
+      x: (maxDepthByCurrency.get(currency) ?? 0) * 180,
+      y: index * 70,
+    },
+    data: { label: currency },
+  }));
+
+  const bestLegByPair = new Map(
+    bestRoute?.legs.map((leg) => [`${leg.from}-${leg.to}`, leg.providerName]) ?? [],
   );
 
-  const edges = routes.flatMap((route, routeIndex) =>
-    route.legs.map((leg, legIndex) => {
-      const color = routeGraphColor(routeIndex);
+  const graphEdges = new Map<
+    string,
+    {
+      source: string;
+      target: string;
+      providers: Set<string>;
+      bestProvider: string | null;
+    }
+  >();
 
-      return {
-        id: `route-${routeIndex}-edge-${legIndex}`,
-        source: graphNodeId(routeIndex, legIndex),
-        target: graphNodeId(routeIndex, legIndex + 1),
-        label: `#${routeIndex + 1} ${leg.providerName}`,
-        markerEnd: { type: MarkerType.ArrowClosed, color },
-        style: {
-          stroke: color,
-          strokeWidth: routeIndex === 0 ? 3 : 2.2,
-        },
-        animated: routeIndex === 0,
-        labelStyle: {
-          fill: color,
-          fontSize: 12,
-          fontWeight: 700,
-        },
-        labelBgStyle: {
-          fill: "#ffffff",
-          fillOpacity: 0.92,
-        },
+  for (const route of routes) {
+    for (const leg of route.legs) {
+      const id = `${leg.from}-${leg.to}`;
+      const existing = graphEdges.get(id) ?? {
+        source: leg.from,
+        target: leg.to,
+        providers: new Set<string>(),
+        bestProvider: null,
       };
-    }),
-  );
+      existing.providers.add(leg.providerName);
+      existing.bestProvider = bestLegByPair.get(id) ?? existing.bestProvider;
+      graphEdges.set(id, existing);
+    }
+  }
+
+  const edges = [...graphEdges.entries()].map(([id, edge]) => {
+    const highlighted = Boolean(edge.bestProvider);
+    const providers = [...edge.providers];
+    const remainingCount = edge.bestProvider
+      ? providers.filter((provider) => provider !== edge.bestProvider).length
+      : Math.max(providers.length - 1, 0);
+
+    return {
+      id,
+      source: edge.source,
+      target: edge.target,
+      label: edge.bestProvider
+        ? `${edge.bestProvider}${remainingCount > 0 ? ` +${remainingCount}` : ""}`
+        : providers.length > 1
+          ? `${providers[0]} +${providers.length - 1}`
+          : providers[0],
+      markerEnd: { type: MarkerType.ArrowClosed },
+      style: {
+        stroke: highlighted ? "#0f766e" : "#94a3b8",
+        strokeWidth: highlighted ? 3 : 1.6,
+      },
+    };
+  });
 
   return { nodes, edges };
-}
-
-function graphNodeId(routeIndex: number, currencyIndex: number) {
-  return `route-${routeIndex}-node-${currencyIndex}`;
-}
-
-function routeGraphColor(routeIndex: number) {
-  return ["#0f766e", "#2563eb", "#d97706"][routeIndex] ?? "#475569";
-}
-
-function routeProviderLabel(route: RouteQuote) {
-  return route.legs.map((leg) => leg.providerName).join(" -> ");
 }
 
 function SkeletonRoutes() {
