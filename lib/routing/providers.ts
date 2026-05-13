@@ -1,4 +1,4 @@
-import providersJson from "@/data/providers.json";
+import providersJson from "../../data/providers.json";
 import type { ProviderConfig, ProvidersFile, ProviderStatus, QuoteEdge } from "./types";
 import { edgeFromProvider } from "./provider-adapters";
 

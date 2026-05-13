@@ -37,6 +37,14 @@ const currencies = ["USD", "EUR", "GBP", "JPY", "CAD", "AUD", "CHF", "USDT", "US
 
 const initialQuote: QuoteResponse | null = null;
 
+type ScaleChartPoint = {
+  amount: number;
+  delivered: number | null;
+  deliveredPerSource: number | null;
+  label: string;
+  routeChanged: boolean;
+};
+
 export default function Home() {
   const [source, setSource] = useState("GBP");
   const [target, setTarget] = useState("JPY");
@@ -465,8 +473,16 @@ function ScalingPanel({
   const chartData = quote?.scaleAnalysis.map((point) => ({
     amount: point.amount,
     delivered: point.finalAmount,
+    deliveredPerSource: point.deliveredPerSource,
     label: point.bestRouteLabel ?? "No route",
+    routeChanged: point.routeChanged,
   }));
+  const routeChangeCount = chartData?.filter((point) => point.routeChanged).length ?? 0;
+  const scaleSummary = chartData?.length
+    ? routeChangeCount > 0
+      ? `${routeChangeCount} winner switch${routeChangeCount === 1 ? "" : "es"} detected`
+      : "Same winner across sampled sizes"
+    : "Run a quote to sample sizes";
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
@@ -490,9 +506,14 @@ function ScalingPanel({
                 tickFormatter={(value) => formatCompact(value)}
               />
               <Tooltip
-                formatter={(value) => [formatMoney(Number(value), target), "Delivered"]}
-                labelFormatter={(value) => `${formatMoney(Number(value), source)} sent`}
-                contentStyle={{ borderRadius: 8, borderColor: "#cbd5e1" }}
+                content={(props) => (
+                  <ScaleTooltip
+                    active={props.active}
+                    payload={props.payload as unknown as ReadonlyArray<{ payload?: ScaleChartPoint }> | undefined}
+                    source={source}
+                    target={target}
+                  />
+                )}
               />
               <Line
                 dataKey="delivered"
@@ -507,10 +528,93 @@ function ScalingPanel({
           <EmptyState message="Run a quote to see scaling behavior." />
         )}
       </div>
-      <p className="mt-2 text-xs text-slate-500">
-        The winning path can change as flat fees become less important at larger sizes.
-      </p>
+      <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+            Winning route by amount
+          </p>
+          <span
+            className={clsx(
+              "rounded-md border px-2 py-1 text-xs font-semibold",
+              routeChangeCount > 0
+                ? "border-amber-200 bg-amber-50 text-amber-800"
+                : "border-slate-200 bg-white text-slate-600",
+            )}
+          >
+            {scaleSummary}
+          </span>
+        </div>
+        {chartData && chartData.length > 0 ? (
+          <div className="mt-3 grid gap-2 md:grid-cols-2">
+            {chartData.map((point) => (
+              <div
+                key={`${point.amount}-${point.label}`}
+                className={clsx(
+                  "rounded-md border bg-white p-2",
+                  point.routeChanged ? "border-amber-300" : "border-slate-200",
+                )}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-semibold text-slate-950">
+                    {formatMoney(point.amount, source)}
+                  </span>
+                  {point.routeChanged ? (
+                    <span className="rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                      Switch
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-1 break-words text-xs text-slate-600" title={point.label}>
+                  {point.label}
+                </p>
+                <p className="mt-1 text-xs font-semibold text-teal-700">
+                  {point.delivered === null ? "No route" : `${formatMoney(point.delivered, target)} delivered`}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </div>
     </section>
+  );
+}
+
+function ScaleTooltip({
+  active,
+  payload,
+  source,
+  target,
+}: {
+  active?: boolean;
+  payload?: ReadonlyArray<{ payload?: ScaleChartPoint }>;
+  source: string;
+  target: string;
+}) {
+  const point = payload?.[0]?.payload;
+
+  if (!active || !point) {
+    return null;
+  }
+
+  return (
+    <div className="max-w-72 rounded-lg border border-slate-200 bg-white p-3 text-xs shadow-lg">
+      <p className="font-semibold text-slate-950">{formatMoney(point.amount, source)} sent</p>
+      <p className="mt-1 text-slate-600">
+        {point.delivered === null ? "No viable route" : `${formatMoney(point.delivered, target)} delivered`}
+      </p>
+      <p className="mt-2 text-slate-500">Winner</p>
+      <p className="font-medium text-slate-800">{point.label}</p>
+      {point.deliveredPerSource !== null ? (
+        <p className="mt-2 text-slate-500">
+          {formatNumber(point.deliveredPerSource, 6)} {target} per {source}
+        </p>
+      ) : null}
+      {point.routeChanged ? (
+        <p className="mt-2 rounded-md bg-amber-50 px-2 py-1 font-semibold text-amber-800">
+          Route switches at this size
+        </p>
+      ) : null}
+    </div>
   );
 }
 

@@ -82,7 +82,7 @@ function filterEdgesByRailMode(edges: QuoteEdge[], railMode: RailMode): QuoteEdg
   return edges;
 }
 
-function buildScaleAnalysis({
+export function buildScaleAnalysis({
   source,
   target,
   amount,
@@ -93,6 +93,8 @@ function buildScaleAnalysis({
   amount: number;
   edges: QuoteEdge[];
 }): ScalePoint[] {
+  let previousRouteId: string | null = null;
+
   return scaleAmounts(amount).map((scaledAmount) => {
     const bestRoute =
       rankRoutes({
@@ -103,18 +105,25 @@ function buildScaleAnalysis({
         edges,
         limit: 1,
       })[0] ?? null;
+    const bestRouteId = bestRoute?.id ?? null;
+    const routeChanged = previousRouteId !== null && bestRouteId !== previousRouteId;
+
+    previousRouteId = bestRouteId;
 
     return {
       amount: scaledAmount,
-      bestRouteId: bestRoute?.id ?? null,
+      bestRouteId,
       bestRouteLabel: bestRoute ? routeLabel(bestRoute) : null,
       finalAmount: bestRoute?.finalAmount ?? null,
+      deliveredPerSource: bestRoute ? bestRoute.finalAmount / scaledAmount : null,
+      routeChanged,
     };
   });
 }
 
-function scaleAmounts(amount: number): number[] {
-  const raw = [amount / 10, amount / 2, amount, amount * 5, amount * 10, amount * 25];
+export function scaleAmounts(amount: number): number[] {
+  const multipliers = [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 25, 50, 100];
+  const raw = multipliers.map((multiplier) => amount * multiplier);
   const unique = new Set(raw.map((value) => Math.max(1, Math.round(value * 100) / 100)));
   return [...unique].sort((a, b) => a - b);
 }

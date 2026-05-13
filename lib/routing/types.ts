@@ -73,6 +73,8 @@ export interface ScalePoint {
   bestRouteId: string | null;
   bestRouteLabel: string | null;
   finalAmount: number | null;
+  deliveredPerSource: number | null;
+  routeChanged: boolean;
 }
 
 export interface QuoteResponse {
