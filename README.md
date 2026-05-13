@@ -5,7 +5,7 @@ FX RouteDesk is a TypeScript/Next.js take-home project for finding the best mult
 ## Links
 
 - Deployed app: _to be added after Vercel deployment_
-- GitHub repo: _to be added after GitHub publish_
+- GitHub repo: https://github.com/manav-vc/fx-routing-tool
 
 ## Run locally
 
