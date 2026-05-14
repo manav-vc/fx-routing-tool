@@ -2,8 +2,8 @@
 @import "@xyflow/react/dist/style.css";
 
 :root {
-  --background: #f6f8fb;
-  --foreground: #172033;
+  --background: #f4f9ff;
+  --foreground: #07172f;
 }
 
 @theme inline {
@@ -14,22 +14,23 @@
 }
 
 body {
-  background: var(--background);
+  background:
+    linear-gradient(180deg, #ffffff 0%, #f4f9ff 42%, #eaf4ff 100%);
   color: var(--foreground);
 }
 
 .react-flow__attribution {
   background: transparent;
-  color: #64748b;
+  color: #6b7f99;
   font-size: 10px;
 }
 
 .react-flow__node {
   border-radius: 8px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid #b8d7ff;
   background: #ffffff;
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
-  color: #172033;
+  box-shadow: 0 14px 30px rgba(20, 91, 184, 0.14);
+  color: #07172f;
   font-weight: 700;
   padding: 8px 12px;
 }
@@ -39,6 +40,24 @@ body {
 }
 
 .react-flow__edge-text {
-  fill: #334155;
+  fill: #425672;
   font-size: 11px;
+}
+
+.react-flow__controls {
+  border: 1px solid #d8e8fb;
+  border-radius: 8px;
+  box-shadow: 0 12px 26px rgba(19, 54, 105, 0.1);
+  overflow: hidden;
+}
+
+.react-flow__controls-button {
+  background: #ffffff;
+  border-bottom: 1px solid #e5f0fb;
+  color: #425672;
+}
+
+.react-flow__controls-button:hover {
+  background: #eef6ff;
+  color: #0f6bff;
 }

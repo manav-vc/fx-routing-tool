@@ -101,4 +101,121 @@ describe("routing engine", () => {
     expect(compared[0].directDifferencePercent).toBeCloseTo(5.555555);
     expect(compared.find((route) => route.isDirect)?.directDifferenceAmount).toBeCloseTo(0);
   });
+
+  it("matches an independent exhaustive route calculation", () => {
+    const edges = [
+      edge("GBP", "JPY", "AlphaFX", 188.5, 0.0015),
+      edge("GBP", "USD", "BetaBank", 1.28, 0.0008, 3),
+      edge("USD", "JPY", "GammaCrypto", 151.4, 0.001),
+      edge("GBP", "EUR", "DeltaMarkets", 1.16, 0.0011, 2),
+      edge("EUR", "JPY", "EpsilonChain", 163.8, 0.0012, 1),
+      edge("GBP", "CAD", "ZetaSwap", 1.72, 0.0025),
+      edge("CAD", "JPY", "GammaCrypto", 109.2, 0.001),
+      edge("USD", "CHF", "AlphaFX", 0.88, 0.0015),
+      edge("CHF", "JPY", "BetaBank", 173.6, 0.0008, 3),
+      edge("EUR", "GBP", "LoopBank", 0.86),
+    ];
+    const amount = 2500;
+    const expected = exhaustiveRouteKeys({
+      source: "GBP",
+      target: "JPY",
+      amount,
+      maxLegs: 3,
+      edges,
+      limit: 5,
+    });
+
+    const actual = rankRoutes({
+      source: "GBP",
+      target: "JPY",
+      amount,
+      maxLegs: 3,
+      edges,
+      limit: 5,
+    });
+
+    expect(actual.map(routeKey)).toEqual(expected.map((route) => route.key));
+    actual.forEach((route, index) => {
+      expect(route.finalAmount).toBeCloseTo(expected[index].finalAmount, 5);
+    });
+  });
 });
+
+function exhaustiveRouteKeys({
+  source,
+  target,
+  amount,
+  maxLegs,
+  edges,
+  limit,
+}: {
+  source: string;
+  target: string;
+  amount: number;
+  maxLegs: number;
+  edges: QuoteEdge[];
+  limit: number;
+}) {
+  const routes: Array<{ key: string; finalAmount: number }> = [];
+  const adjacency = new Map<string, QuoteEdge[]>();
+
+  for (const candidate of edges) {
+    const from = candidate.from.toUpperCase();
+    adjacency.set(from, [
+      ...(adjacency.get(from) ?? []),
+      {
+        ...candidate,
+        from,
+        to: candidate.to.toUpperCase(),
+      },
+    ]);
+  }
+
+  function walk(
+    current: string,
+    currentAmount: number,
+    path: string[],
+    providers: string[],
+  ) {
+    if (providers.length > 0 && current === target.toUpperCase()) {
+      routes.push({
+        key: `${path.join(">")}::${providers.join(">")}`,
+        finalAmount: currentAmount,
+      });
+      return;
+    }
+
+    if (providers.length >= maxLegs) {
+      return;
+    }
+
+    for (const candidate of adjacency.get(current) ?? []) {
+      if (path.includes(candidate.to)) {
+        continue;
+      }
+
+      const feeAmount = currentAmount * candidate.feePercent + candidate.feeFlat;
+      const netAmount = Math.max(currentAmount - feeAmount, 0);
+      const outputAmount = netAmount * candidate.rate;
+
+      if (outputAmount <= 0) {
+        continue;
+      }
+
+      walk(
+        candidate.to,
+        outputAmount,
+        [...path, candidate.to],
+        [...providers, candidate.providerName],
+      );
+    }
+  }
+
+  walk(source.toUpperCase(), amount, [source.toUpperCase()], []);
+
+  return routes.sort((a, b) => b.finalAmount - a.finalAmount).slice(0, limit);
+}
+
+function routeKey(route: { path: string[]; legs: Array<{ providerName: string }> }) {
+  return `${route.path.join(">")}::${route.legs.map((leg) => leg.providerName).join(">")}`;
+}
