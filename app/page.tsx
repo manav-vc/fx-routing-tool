@@ -107,16 +107,16 @@ export default function Home() {
   const bestRoute = quote?.routes[0] ?? null;
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,#ffffff_0%,#f4f9ff_42%,#eaf4ff_100%)] text-[#07172f]">
+    <main className="min-h-screen overflow-x-hidden bg-[linear-gradient(180deg,#ffffff_0%,#f4f9ff_42%,#eaf4ff_100%)] text-[#07172f]">
       <section className="border-b border-[#d8e8fb] bg-white/95 shadow-[0_18px_48px_rgba(19,54,105,0.08)]">
         <div className="mx-auto flex max-w-[1720px] flex-col gap-4 px-4 py-5 sm:px-6 lg:px-8">
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#0f6bff] text-white shadow-[0_12px_24px_rgba(15,107,255,0.24)]">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#0f6bff] text-white shadow-[0_12px_24px_rgba(15,107,255,0.24)]">
                   <CircleDollarSign className="h-5 w-5" aria-hidden />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <h1 className="text-2xl font-semibold tracking-normal text-[#061733]">
                     FX RouteDesk
                   </h1>
@@ -141,7 +141,7 @@ export default function Home() {
       </section>
 
       <section className="mx-auto grid max-w-[1720px] gap-5 px-4 py-5 sm:px-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,360px)] lg:px-8">
-        <aside className="h-fit rounded-lg border border-[#d8e8fb] bg-white p-4 shadow-[0_18px_44px_rgba(19,54,105,0.08)] xl:sticky xl:top-5 xl:col-start-2 xl:row-start-1 xl:max-h-[calc(100vh-2.5rem)] xl:self-start xl:overflow-y-auto">
+        <aside className="min-w-0 h-fit rounded-lg border border-[#d8e8fb] bg-white p-3 shadow-[0_18px_44px_rgba(19,54,105,0.08)] sm:p-4 xl:sticky xl:top-5 xl:col-start-2 xl:row-start-1 xl:max-h-[calc(100vh-2.5rem)] xl:self-start xl:overflow-y-auto">
           <div className="mb-4 flex items-center gap-2">
             <Filter className="h-4 w-4 text-[#0f6bff]" aria-hidden />
             <h2 className="text-sm font-semibold uppercase tracking-normal text-[#526987]">
@@ -162,7 +162,7 @@ export default function Home() {
                 onChange={(event) => setAmount(Number(event.target.value))}
               />
             </label>
-            <div>
+            <div className="min-w-0">
               <span className="text-sm font-medium text-[#233b5b]">Rails</span>
               <div className="mt-2 grid grid-cols-2 rounded-md border border-[#cfe0f3] bg-[#eef6ff] p-1">
                 <RailButton active={railMode === "all"} onClick={() => setRailMode("all")}>
@@ -197,10 +197,10 @@ export default function Home() {
           </div>
         </aside>
 
-        <div className="space-y-5 xl:col-start-1 xl:row-start-1">
+        <div className="min-w-0 space-y-5 xl:col-start-1 xl:row-start-1">
           <SummaryBand quote={quote} bestRoute={bestRoute} target={displayInputs.target} />
-          <section className="grid gap-5 min-[1720px]:grid-cols-[minmax(720px,1.15fr)_minmax(420px,0.85fr)]">
-            <div className="space-y-4">
+          <section className="grid min-w-0 gap-5 min-[1720px]:grid-cols-[minmax(720px,1.15fr)_minmax(420px,0.85fr)]">
+            <div className="min-w-0 space-y-4">
               <SectionHeader
                 icon={<TrendingUp className="h-4 w-4" aria-hidden />}
                 title="Top routes"
@@ -219,7 +219,7 @@ export default function Home() {
                 />
               ))}
             </div>
-            <div className="space-y-5">
+            <div className="min-w-0 space-y-5">
               <ScalingPanel
                 quote={quote}
                 source={displayInputs.source}
@@ -273,7 +273,7 @@ function RailButton({
   return (
     <button
       className={clsx(
-        "h-9 rounded-md text-sm font-semibold transition",
+        "h-9 rounded-md px-2 text-xs font-semibold transition sm:text-sm",
         active
           ? "bg-white text-[#07172f] shadow-[0_8px_18px_rgba(19,54,105,0.1)]"
           : "text-[#667a93] hover:text-[#07172f]",
@@ -308,7 +308,28 @@ function ProviderStatusTable({ statuses }: { statuses: ProviderStatus[] }) {
         </h3>
         <span className="text-xs font-medium text-[#667a93]">{statuses.length} checked</span>
       </div>
-      <div className="overflow-hidden rounded-lg border border-[#d8e8fb]">
+      <div className="space-y-2 sm:hidden">
+        {statuses.map((status) => (
+          <div
+            key={status.providerName}
+            className="rounded-md border border-[#d8e8fb] bg-white p-3"
+            title={status.message}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-[#07172f]">
+                  {status.providerName}
+                </p>
+                <p className="mt-1 text-xs font-medium text-[#526987]">
+                  {status.quotedPairs} pairs, {status.latencyMs}ms
+                </p>
+              </div>
+              <ProviderStateIcon state={status.state} />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="hidden overflow-hidden rounded-lg border border-[#d8e8fb] sm:block">
         <table className="w-full table-fixed text-left text-xs">
           <thead className="bg-[#f8fbff] text-[#667a93]">
             <tr>
@@ -328,17 +349,7 @@ function ProviderStatusTable({ statuses }: { statuses: ProviderStatus[] }) {
                 <td className="px-2 py-2 font-medium text-[#526987]">{status.latencyMs}ms</td>
                 <td className="px-2 py-2">
                   <div className="flex justify-end">
-                    {status.state === "available" ? (
-                      <CheckCircle2 className="h-4 w-4 shrink-0 text-[#0d9f5d]" aria-label="Available" />
-                    ) : (
-                      <AlertTriangle
-                        className={clsx(
-                          "h-4 w-4 shrink-0",
-                          status.state === "degraded" ? "text-amber-600" : "text-red-600",
-                        )}
-                        aria-label={status.state === "degraded" ? "Degraded" : "Unavailable"}
-                      />
-                    )}
+                    <ProviderStateIcon state={status.state} />
                   </div>
                 </td>
               </tr>
@@ -347,6 +358,22 @@ function ProviderStatusTable({ statuses }: { statuses: ProviderStatus[] }) {
         </table>
       </div>
     </section>
+  );
+}
+
+function ProviderStateIcon({ state }: { state: ProviderStatus["state"] }) {
+  if (state === "available") {
+    return <CheckCircle2 className="h-4 w-4 shrink-0 text-[#0d9f5d]" aria-label="Available" />;
+  }
+
+  return (
+    <AlertTriangle
+      className={clsx(
+        "h-4 w-4 shrink-0",
+        state === "degraded" ? "text-amber-600" : "text-red-600",
+      )}
+      aria-label={state === "degraded" ? "Degraded" : "Unavailable"}
+    />
   );
 }
 
@@ -360,7 +387,7 @@ function SummaryBand({
   target: string;
 }) {
   return (
-    <section className="grid gap-3 md:grid-cols-3">
+    <section className="grid min-w-0 gap-3 md:grid-cols-3">
       <Metric
         label="Best delivered"
         value={bestRoute ? formatMoney(bestRoute.finalAmount, target) : "--"}
@@ -400,11 +427,13 @@ function Metric({
   };
 
   return (
-    <div className="rounded-lg border border-[#d8e8fb] bg-white p-4 shadow-[0_16px_34px_rgba(19,54,105,0.07)]">
+    <div className="min-w-0 rounded-lg border border-[#d8e8fb] bg-white p-4 shadow-[0_16px_34px_rgba(19,54,105,0.07)]">
       <span className={clsx("rounded-md border px-2 py-1 text-xs font-semibold", colors[accent])}>
         {label}
       </span>
-      <p className="mt-3 text-2xl font-semibold tracking-normal text-[#061733]">{value}</p>
+      <p className="mt-3 break-words text-2xl font-semibold tracking-normal text-[#061733]">
+        {value}
+      </p>
     </div>
   );
 }
@@ -419,8 +448,8 @@ function SectionHeader({
   detail: string;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3">
-      <div className="flex items-center gap-2 text-[#061733]">
+    <div className="flex min-w-0 flex-col items-start gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+      <div className="flex min-w-0 items-center gap-2 text-[#061733]">
         {icon}
         <h2 className="text-lg font-semibold tracking-normal">{title}</h2>
       </div>
@@ -433,14 +462,14 @@ function RouteCard({ route, rank, target }: { route: RouteQuote; rank: number; t
   return (
     <article
       className={clsx(
-        "rounded-lg border bg-white p-4 shadow-[0_16px_38px_rgba(19,54,105,0.08)]",
+        "min-w-0 rounded-lg border bg-white p-3 shadow-[0_16px_38px_rgba(19,54,105,0.08)] sm:p-4",
         rank === 1 ? "border-[#9ec8ff]" : "border-[#d8e8fb]",
       )}
     >
       <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[#0f6bff] text-sm font-bold text-white shadow-[0_10px_18px_rgba(15,107,255,0.24)]">
+        <div className="min-w-0">
+          <div className="flex min-w-0 items-start gap-2">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#0f6bff] text-sm font-bold text-white shadow-[0_10px_18px_rgba(15,107,255,0.24)]">
               {rank}
             </span>
             <RoutePath route={route} />
@@ -450,7 +479,7 @@ function RouteCard({ route, rank, target }: { route: RouteQuote; rank: number; t
             {route.isDirect ? "Direct quote" : "Multi-leg route"}
           </p>
         </div>
-        <div className="text-left md:text-right">
+        <div className="min-w-0 text-left md:text-right">
           <p className="max-w-full break-words text-xl font-semibold text-[#061733] sm:text-2xl">
             {formatMoney(route.finalAmount, target)}
           </p>
@@ -466,7 +495,46 @@ function RouteCard({ route, rank, target }: { route: RouteQuote; rank: number; t
           </p>
         </div>
       </div>
-      <div className="mt-4 overflow-x-auto">
+      <div className="mt-4 space-y-2 md:hidden">
+        {route.legs.map((leg, index) => (
+          <div
+            key={`${leg.providerName}-${leg.from}-${leg.to}-${index}-mobile`}
+            className="rounded-md border border-[#d8e8fb] bg-[#f8fbff] p-3"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <p className="font-semibold text-[#233b5b]">
+                {leg.from} <ArrowRight className="mx-1 inline h-3 w-3" aria-hidden /> {leg.to}
+              </p>
+              <span className="rounded-md border border-[#d8e8fb] bg-white px-2 py-1 text-xs font-semibold text-[#425672]">
+                Leg {index + 1}
+              </span>
+            </div>
+            <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+              <div className="min-w-0">
+                <dt className="font-semibold uppercase tracking-normal text-[#667a93]">Provider</dt>
+                <dd className="mt-1 truncate font-medium text-[#07172f]">{leg.providerName}</dd>
+              </div>
+              <div className="min-w-0">
+                <dt className="font-semibold uppercase tracking-normal text-[#667a93]">Rate</dt>
+                <dd className="mt-1 font-mono text-[#526987]">{formatNumber(leg.rate, 6)}</dd>
+              </div>
+              <div className="min-w-0">
+                <dt className="font-semibold uppercase tracking-normal text-[#667a93]">Fees</dt>
+                <dd className="mt-1 text-[#526987]">
+                  {formatNumber(leg.feeAmount)} {leg.from}
+                </dd>
+              </div>
+              <div className="min-w-0">
+                <dt className="font-semibold uppercase tracking-normal text-[#667a93]">Output</dt>
+                <dd className="mt-1 break-words font-semibold text-[#233b5b]">
+                  {formatNumber(leg.outputAmount)} {leg.to}
+                </dd>
+              </div>
+            </dl>
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 hidden overflow-x-auto md:block">
         <table className="min-w-[720px] text-left text-sm">
           <thead className="text-xs uppercase tracking-normal text-[#667a93]">
             <tr>
@@ -504,11 +572,11 @@ function RouteCard({ route, rank, target }: { route: RouteQuote; rank: number; t
 
 function RoutePath({ route }: { route: RouteQuote }) {
   return (
-    <div className="flex flex-wrap items-center gap-1 text-sm font-semibold text-[#07172f]">
+    <div className="flex min-w-0 flex-wrap items-center gap-1 text-sm font-semibold text-[#07172f]">
       {route.legs.map((leg, index) => (
         <span key={`${leg.providerName}-${index}`} className="inline-flex items-center gap-1">
           {index === 0 ? <span>{leg.from}</span> : null}
-          <span className="rounded-md border border-[#d8e8fb] bg-[#eef6ff] px-2 py-1 text-xs text-[#425672]">
+          <span className="max-w-[9rem] truncate rounded-md border border-[#d8e8fb] bg-[#eef6ff] px-2 py-1 text-xs text-[#425672] sm:max-w-none">
             {leg.providerName}
           </span>
           <ArrowRight className="h-3 w-3 text-[#87a4c6]" aria-hidden />
@@ -543,13 +611,13 @@ function ScalingPanel({
     : "Run a quote to sample sizes";
 
   return (
-    <section className="rounded-lg border border-[#d8e8fb] bg-white p-4 shadow-[0_16px_38px_rgba(19,54,105,0.08)]">
+    <section className="min-w-0 rounded-lg border border-[#d8e8fb] bg-white p-3 shadow-[0_16px_38px_rgba(19,54,105,0.08)] sm:p-4">
       <SectionHeader
         icon={<TrendingUp className="h-4 w-4" aria-hidden />}
         title="Amount scaling"
         detail={`${source} to ${target}`}
       />
-      <div className="mt-4 h-72">
+      <div className="mt-4 h-60 min-w-0 sm:h-72">
         {chartData && chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ left: 8, right: 18, top: 12, bottom: 8 }}>
@@ -586,8 +654,8 @@ function ScalingPanel({
           <EmptyState message="Run a quote to see scaling behavior." />
         )}
       </div>
-      <div className="mt-4 rounded-lg border border-[#d8e8fb] bg-[#f8fbff] p-3">
-        <div className="flex items-center justify-between gap-3">
+      <div className="mt-4 min-w-0 rounded-lg border border-[#d8e8fb] bg-[#f8fbff] p-3">
+        <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           <p className="text-xs font-semibold uppercase tracking-normal text-[#667a93]">
             Winning route by amount
           </p>
@@ -603,16 +671,16 @@ function ScalingPanel({
           </span>
         </div>
         {chartData && chartData.length > 0 ? (
-          <div className="mt-3 grid gap-2 md:grid-cols-2">
+          <div className="mt-3 grid min-w-0 gap-2 md:grid-cols-2">
             {chartData.map((point) => (
               <div
                 key={`${point.amount}-${point.label}`}
                 className={clsx(
-                  "rounded-md border bg-white p-2",
+                  "min-w-0 rounded-md border bg-white p-2",
                   point.routeChanged ? "border-amber-300" : "border-[#d8e8fb]",
                 )}
               >
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center justify-between gap-2">
                   <span className="text-xs font-semibold text-[#061733]">
                     {formatMoney(point.amount, source)}
                   </span>
@@ -686,13 +754,13 @@ function GraphPanel({
   const { nodes, edges } = useMemo(() => buildGraph(routes, bestRoute), [bestRoute, routes]);
 
   return (
-    <section className="rounded-lg border border-[#d8e8fb] bg-white p-4 shadow-[0_16px_38px_rgba(19,54,105,0.08)]">
+    <section className="min-w-0 rounded-lg border border-[#d8e8fb] bg-white p-3 shadow-[0_16px_38px_rgba(19,54,105,0.08)] sm:p-4">
       <SectionHeader
         icon={<GitBranch className="h-4 w-4" aria-hidden />}
         title="Route graph"
         detail="Best path highlighted"
       />
-      <div className="mt-4 h-80 overflow-hidden rounded-lg border border-[#d8e8fb] bg-[#fbfdff]">
+      <div className="mt-4 h-64 min-w-0 overflow-hidden rounded-lg border border-[#d8e8fb] bg-[#fbfdff] sm:h-80">
         {nodes.length > 0 ? (
           <ReactFlow
             colorMode="light"
