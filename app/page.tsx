@@ -109,7 +109,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#ffffff_0%,#f4f9ff_42%,#eaf4ff_100%)] text-[#07172f]">
       <section className="border-b border-[#d8e8fb] bg-white/95 shadow-[0_18px_48px_rgba(19,54,105,0.08)]">
-        <div className="mx-auto flex max-w-[1480px] flex-col gap-4 px-4 py-5 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-[1720px] flex-col gap-4 px-4 py-5 sm:px-6 lg:px-8">
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
             <div>
               <div className="flex items-center gap-3">
@@ -140,8 +140,8 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-[1480px] gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-8">
-        <aside className="h-fit rounded-lg border border-[#d8e8fb] bg-white p-4 shadow-[0_18px_44px_rgba(19,54,105,0.08)] lg:sticky lg:top-5 lg:col-start-2 lg:row-start-1 lg:max-h-[calc(100vh-2.5rem)] lg:self-start lg:overflow-y-auto">
+      <section className="mx-auto grid max-w-[1720px] gap-5 px-4 py-5 sm:px-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,360px)] lg:px-8">
+        <aside className="h-fit rounded-lg border border-[#d8e8fb] bg-white p-4 shadow-[0_18px_44px_rgba(19,54,105,0.08)] xl:sticky xl:top-5 xl:col-start-2 xl:row-start-1 xl:max-h-[calc(100vh-2.5rem)] xl:self-start xl:overflow-y-auto">
           <div className="mb-4 flex items-center gap-2">
             <Filter className="h-4 w-4 text-[#0f6bff]" aria-hidden />
             <h2 className="text-sm font-semibold uppercase tracking-normal text-[#526987]">
@@ -197,9 +197,9 @@ export default function Home() {
           </div>
         </aside>
 
-        <div className="space-y-5 lg:col-start-1 lg:row-start-1">
+        <div className="space-y-5 xl:col-start-1 xl:row-start-1">
           <SummaryBand quote={quote} bestRoute={bestRoute} target={displayInputs.target} />
-          <section className="grid gap-5 2xl:grid-cols-[minmax(0,1.15fr)_minmax(420px,0.85fr)]">
+          <section className="grid gap-5 min-[1720px]:grid-cols-[minmax(720px,1.15fr)_minmax(420px,0.85fr)]">
             <div className="space-y-4">
               <SectionHeader
                 icon={<TrendingUp className="h-4 w-4" aria-hidden />}
