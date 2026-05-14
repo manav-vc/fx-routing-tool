@@ -109,7 +109,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#ffffff_0%,#f4f9ff_42%,#eaf4ff_100%)] text-[#07172f]">
       <section className="border-b border-[#d8e8fb] bg-white/95 shadow-[0_18px_48px_rgba(19,54,105,0.08)]">
-        <div className="mx-auto flex max-w-[1480px] flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-[1480px] flex-col gap-4 px-4 py-5 sm:px-6 lg:px-8">
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
             <div>
               <div className="flex items-center gap-3">
@@ -137,12 +137,11 @@ export default function Home() {
               </span>
             </div>
           </div>
-          <ProviderStrip statuses={quote?.providerStatus ?? []} />
         </div>
       </section>
 
       <section className="mx-auto grid max-w-[1480px] gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-8">
-        <aside className="h-fit rounded-lg border border-[#d8e8fb] bg-white p-4 shadow-[0_18px_44px_rgba(19,54,105,0.08)] lg:sticky lg:top-5 lg:order-2">
+        <aside className="h-fit rounded-lg border border-[#d8e8fb] bg-white p-4 shadow-[0_18px_44px_rgba(19,54,105,0.08)] lg:sticky lg:top-5 lg:col-start-2 lg:row-start-1 lg:max-h-[calc(100vh-2.5rem)] lg:self-start lg:overflow-y-auto">
           <div className="mb-4 flex items-center gap-2">
             <Filter className="h-4 w-4 text-[#0f6bff]" aria-hidden />
             <h2 className="text-sm font-semibold uppercase tracking-normal text-[#526987]">
@@ -194,10 +193,11 @@ export default function Home() {
                 {error}
               </div>
             ) : null}
+            <ProviderStatusTable statuses={quote?.providerStatus ?? []} />
           </div>
         </aside>
 
-        <div className="space-y-5 lg:order-1">
+        <div className="space-y-5 lg:col-start-1 lg:row-start-1">
           <SummaryBand quote={quote} bestRoute={bestRoute} target={displayInputs.target} />
           <section className="grid gap-5 2xl:grid-cols-[minmax(0,1.15fr)_minmax(420px,0.85fr)]">
             <div className="space-y-4">
@@ -286,54 +286,67 @@ function RailButton({
   );
 }
 
-function ProviderStrip({ statuses }: { statuses: ProviderStatus[] }) {
+function ProviderStatusTable({ statuses }: { statuses: ProviderStatus[] }) {
   if (statuses.length === 0) {
     return (
-      <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
-        {Array.from({ length: 6 }).map((_, index) => (
-          <div
-            key={index}
-            className="h-16 animate-pulse rounded-lg border border-[#d8e8fb] bg-[linear-gradient(90deg,#f8fbff,#eef6ff,#f8fbff)]"
-          />
-        ))}
-      </div>
+      <section className="border-t border-[#e5f0fb] pt-4">
+        <h3 className="text-xs font-semibold uppercase tracking-normal text-[#526987]">
+          Provider status
+        </h3>
+        <div className="mt-2 rounded-md border border-dashed border-[#cfe0f3] bg-[#f8fbff] p-3 text-xs text-[#667a93]">
+          Run a quote to see provider health.
+        </div>
+      </section>
     );
   }
 
   return (
-    <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
-      {statuses.map((status) => (
-        <div
-          key={status.providerName}
-          className={clsx(
-            "rounded-lg border bg-white p-3 shadow-[0_10px_24px_rgba(19,54,105,0.06)]",
-            status.state === "available"
-              ? "border-[#bfe9d4]"
-              : status.state === "degraded"
-                ? "border-amber-200"
-                : "border-red-200",
-          )}
-        >
-          <div className="flex items-center justify-between gap-2">
-            <span className="truncate text-sm font-semibold text-[#07172f]">{status.providerName}</span>
-            {status.state === "available" ? (
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-[#0d9f5d]" aria-hidden />
-            ) : (
-              <AlertTriangle
-                className={clsx(
-                  "h-4 w-4 shrink-0",
-                  status.state === "degraded" ? "text-amber-600" : "text-red-600",
-                )}
-                aria-hidden
-              />
-            )}
-          </div>
-          <p className="mt-1 truncate text-xs text-[#667a93]" title={status.message}>
-            {status.quotedPairs} pairs · {status.latencyMs}ms
-          </p>
-        </div>
-      ))}
-    </div>
+    <section className="border-t border-[#e5f0fb] pt-4">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h3 className="text-xs font-semibold uppercase tracking-normal text-[#526987]">
+          Provider status
+        </h3>
+        <span className="text-xs font-medium text-[#667a93]">{statuses.length} checked</span>
+      </div>
+      <div className="overflow-hidden rounded-lg border border-[#d8e8fb]">
+        <table className="w-full table-fixed text-left text-xs">
+          <thead className="bg-[#f8fbff] text-[#667a93]">
+            <tr>
+              <th className="w-[42%] px-2 py-2 font-semibold">Provider</th>
+              <th className="w-[20%] px-2 py-2 font-semibold">Pairs</th>
+              <th className="w-[25%] px-2 py-2 font-semibold">Latency</th>
+              <th className="w-[13%] px-2 py-2 text-right font-semibold">State</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[#edf4fc] bg-white">
+            {statuses.map((status) => (
+              <tr key={status.providerName} title={status.message}>
+                <td className="truncate px-2 py-2 font-semibold text-[#07172f]">
+                  {status.providerName}
+                </td>
+                <td className="px-2 py-2 font-medium text-[#526987]">{status.quotedPairs}</td>
+                <td className="px-2 py-2 font-medium text-[#526987]">{status.latencyMs}ms</td>
+                <td className="px-2 py-2">
+                  <div className="flex justify-end">
+                    {status.state === "available" ? (
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-[#0d9f5d]" aria-label="Available" />
+                    ) : (
+                      <AlertTriangle
+                        className={clsx(
+                          "h-4 w-4 shrink-0",
+                          status.state === "degraded" ? "text-amber-600" : "text-red-600",
+                        )}
+                        aria-label={status.state === "degraded" ? "Degraded" : "Unavailable"}
+                      />
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }
 
