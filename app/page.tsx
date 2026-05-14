@@ -65,7 +65,7 @@ const graphEdgeTypes = {
 export default function Home() {
   const [source, setSource] = useState("GBP");
   const [target, setTarget] = useState("JPY");
-  const [amount, setAmount] = useState(10000);
+  const [amount, setAmount] = useState(1000);
   const [railMode, setRailMode] = useState<RailMode>("all");
   const [quote, setQuote] = useState(initialQuote);
   const [quotedInputs, setQuotedInputs] = useState<QuoteDisplayInputs | null>(null);
