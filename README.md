@@ -37,13 +37,14 @@ Live provider calls use a short timeout, retry transient failures once, and clas
 
 ## AI tools used
 
-- I used Codex/ChatGPT as a planning and implementation partner while building the project.
-- I used it to break down the case-study requirements into concrete product features, but I made the final decisions on scope, data modeling, and what tradeoffs fit the 48-hour assessment.
-- I used it to explore the routing model, then chose to represent providers and currency pairs as directed graph edges because that made multi-leg routing, fees, and route comparison easier to reason about.
-- I used it to help write and refine the TypeScript routing logic, API route, provider adapters, UI components, and tests.
-- I used it to run verification checks such as unit tests, linting, type checks, production builds, and deployment checks.
-- I pushed back on AI suggestions when they did not match the real behavior I wanted, especially around fee handling, route display, and UI responsiveness.
-- I used it to iterate faster on the dashboard UI, but I manually reviewed the output against the product goal: showing the best delivered amount clearly and making route tradeoffs easy to understand.
+- Codex/ChatGPT served as a planning and implementation partner throughout the project.
+- It helped break down the case-study requirements into concrete product features, while I made the final decisions on scope, data modeling, and tradeoffs for the 48-hour assessment.
+- During routing design, I explored multiple approaches and chose to model providers and currency pairs as directed graph edges because that made multi-leg routing, fees, and route comparison easier to reason about.
+- For implementation, it helped refine the TypeScript routing logic, API route, provider adapters, UI components, and tests.
+- For verification, it supported unit tests, linting, type checks, production builds, deployment checks, and UI review.
+- I pushed back on AI suggestions when they did not match the behavior I wanted, especially around fee handling, route display, and mobile responsiveness.
+- The final product decisions were manually reviewed against the main goal: showing the best delivered amount clearly and making route tradeoffs easy to understand.
+
 
 ## One thing the AI got wrong
 
