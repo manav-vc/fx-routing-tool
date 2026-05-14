@@ -37,10 +37,18 @@ Live provider calls use a short timeout, retry transient failures once, and clas
 
 ## AI tools used
 
-I used Codex/ChatGPT as a planning and implementation partner: extracting the PDF requirements, turning the assignment into a concrete product plan, designing the routing model, writing the initial TDD tests, checking API response shapes, and iterating on the dashboard UI. I also used it to keep the README aligned with the assignment prompt instead of only documenting how to run the app.
+- I used Codex/ChatGPT as a planning and implementation partner while building the project.
+- I used it to break down the case-study requirements into concrete product features, but I made the final decisions on scope, data modeling, and what tradeoffs fit the 48-hour assessment.
+- I used it to explore the routing model, then chose to represent providers and currency pairs as directed graph edges because that made multi-leg routing, fees, and route comparison easier to reason about.
+- I used it to help write and refine the TypeScript routing logic, API route, provider adapters, UI components, and tests.
+- I used it to run verification checks such as unit tests, linting, type checks, production builds, and deployment checks.
+- I pushed back on AI suggestions when they did not match the real behavior I wanted, especially around fee handling, route display, and UI responsiveness.
+- I used it to iterate faster on the dashboard UI, but I manually reviewed the output against the product goal: showing the best delivered amount clearly and making route tradeoffs easy to understand.
 
-One thing the AI got wrong: it initially scaffolded Next.js with `--src-dir`, which triggered a Windows/OneDrive rename permission failure. I caught it from the scaffold error output, removed only the incomplete generated folder, and re-scaffolded without `--src-dir`. Another tooling issue caught during verification was Vitest 4 pulling a missing Rolldown native binding, so I pinned Vitest to `2.1.9` after the red test run exposed the problem.
+## One thing the AI got wrong
 
-## What I would do differently with more time
+The AI initially made a mistake in the fee logic for multi-leg routes. When the same provider appeared more than once in a route, it treated the provider fee as if it only needed to be deducted once. That was incorrect because each leg is a separate conversion and should deduct its own fee, even if the provider name is repeated. I caught this by reviewing a multi-leg route where the same provider was used on multiple legs, then corrected the routing logic so fees are applied per leg using that leg's input amount before the conversion rate is applied.
 
-I would add historical quote caching and a small audit log so ops users can compare current routing against recently observed provider behavior, rather than only seeing a point-in-time quote.
+## Longer-term improvements
+
+If this project were extended beyond the take-home scope, I would add more real providers across both fiat and stablecoin rails, historical quote caching, and a small audit log so users could compare current routing decisions against recently observed provider behavior. I would also add stronger production-level features such as authentication, monitoring, provider health dashboards, deeper route decision traces, and more robust error reporting so the tool could move from an assessment prototype toward something reliable enough for broader real-world use.
