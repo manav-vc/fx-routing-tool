@@ -10,7 +10,6 @@ import {
   Filter,
   GitBranch,
   Loader2,
-  RefreshCw,
   TrendingUp,
 } from "lucide-react";
 import {
@@ -136,19 +135,6 @@ export default function Home() {
                     })}`
                   : "No quote yet"}
               </span>
-              <button
-                onClick={fetchQuote}
-                disabled={loading}
-                className="inline-flex h-9 items-center gap-2 rounded-md bg-[#07172f] px-3 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(7,23,47,0.16)] transition hover:bg-[#0f6bff] disabled:cursor-not-allowed disabled:opacity-60"
-                type="button"
-              >
-                {loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                ) : (
-                  <RefreshCw className="h-4 w-4" aria-hidden />
-                )}
-                Refresh quote
-              </button>
             </div>
           </div>
           <ProviderStrip statuses={quote?.providerStatus ?? []} />
