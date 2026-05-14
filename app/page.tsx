@@ -609,6 +609,13 @@ function ScalingPanel({
       ? `${routeChangeCount} winner switch${routeChangeCount === 1 ? "" : "es"} detected`
       : "Same winner across sampled sizes"
     : "Run a quote to sample sizes";
+  const scaleColumns =
+    chartData && chartData.length > 0
+      ? [
+          chartData.slice(0, Math.ceil(chartData.length / 2)),
+          chartData.slice(Math.ceil(chartData.length / 2)),
+        ].filter((column) => column.length > 0)
+      : [];
 
   return (
     <section className="min-w-0 rounded-lg border border-[#d8e8fb] bg-white p-3 shadow-[0_16px_38px_rgba(19,54,105,0.08)] sm:p-4">
@@ -670,32 +677,36 @@ function ScalingPanel({
             {scaleSummary}
           </span>
         </div>
-        {chartData && chartData.length > 0 ? (
+        {scaleColumns.length > 0 ? (
           <div className="mt-3 grid min-w-0 gap-2 md:grid-cols-2">
-            {chartData.map((point) => (
-              <div
-                key={`${point.amount}-${point.label}`}
-                className={clsx(
-                  "min-w-0 rounded-md border bg-white p-2",
-                  point.routeChanged ? "border-amber-300" : "border-[#d8e8fb]",
-                )}
-              >
-                <div className="flex min-w-0 items-center justify-between gap-2">
-                  <span className="text-xs font-semibold text-[#061733]">
-                    {formatMoney(point.amount, source)}
-                  </span>
-                  {point.routeChanged ? (
-                    <span className="rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
-                      Switch
-                    </span>
-                  ) : null}
-                </div>
-                <p className="mt-1 break-words text-xs text-[#526987]" title={point.label}>
-                  {point.label}
-                </p>
-                <p className="mt-1 text-xs font-semibold text-[#0d9f5d]">
-                  {point.delivered === null ? "No route" : `${formatMoney(point.delivered, target)} delivered`}
-                </p>
+            {scaleColumns.map((column, columnIndex) => (
+              <div key={`scale-column-${columnIndex}`} className="grid min-w-0 gap-2">
+                {column.map((point) => (
+                  <div
+                    key={`${point.amount}-${point.label}`}
+                    className={clsx(
+                      "min-w-0 rounded-md border bg-white p-2",
+                      point.routeChanged ? "border-amber-300" : "border-[#d8e8fb]",
+                    )}
+                  >
+                    <div className="flex min-w-0 items-center justify-between gap-2">
+                      <span className="text-xs font-semibold text-[#061733]">
+                        {formatMoney(point.amount, source)}
+                      </span>
+                      {point.routeChanged ? (
+                        <span className="rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                          Switch
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-1 break-words text-xs text-[#526987]" title={point.label}>
+                      {point.label}
+                    </p>
+                    <p className="mt-1 text-xs font-semibold text-[#0d9f5d]">
+                      {point.delivered === null ? "No route" : `${formatMoney(point.delivered, target)} delivered`}
+                    </p>
+                  </div>
+                ))}
               </div>
             ))}
           </div>
