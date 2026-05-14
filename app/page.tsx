@@ -34,6 +34,10 @@ import {
   YAxis,
 } from "recharts";
 import clsx from "clsx";
+import {
+  resolveQuoteDisplayInputs,
+  type QuoteDisplayInputs,
+} from "@/lib/routing/display-context";
 import type { ProviderStatus, QuoteResponse, RailMode, RouteQuote } from "@/lib/routing/types";
 
 const currencies = ["USD", "EUR", "GBP", "JPY", "CAD", "AUD", "CHF", "USDT", "USDC"];
@@ -65,10 +69,18 @@ export default function Home() {
   const [amount, setAmount] = useState(10000);
   const [railMode, setRailMode] = useState<RailMode>("all");
   const [quote, setQuote] = useState(initialQuote);
+  const [quotedInputs, setQuotedInputs] = useState<QuoteDisplayInputs | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const draftInputs = useMemo(
+    () => ({ source, target, amount, railMode }),
+    [amount, railMode, source, target],
+  );
+  const displayInputs = resolveQuoteDisplayInputs(draftInputs, quotedInputs);
 
   const fetchQuote = useCallback(async () => {
+    const requestInputs = { source, target, amount, railMode };
+
     setLoading(true);
     setError(null);
 
@@ -76,7 +88,7 @@ export default function Home() {
       const response = await fetch("/api/quote", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ source, target, amount, railMode }),
+        body: JSON.stringify(requestInputs),
       });
 
       if (!response.ok) {
@@ -85,6 +97,7 @@ export default function Home() {
       }
 
       setQuote(await response.json());
+      setQuotedInputs(requestInputs);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Quote request failed");
     } finally {
@@ -199,7 +212,7 @@ export default function Home() {
         </aside>
 
         <div className="space-y-5">
-          <SummaryBand quote={quote} bestRoute={bestRoute} target={target} />
+          <SummaryBand quote={quote} bestRoute={bestRoute} target={displayInputs.target} />
           <section className="grid gap-5 2xl:grid-cols-[minmax(0,1.15fr)_minmax(420px,0.85fr)]">
             <div className="space-y-4">
               <SectionHeader
@@ -212,11 +225,20 @@ export default function Home() {
                 <EmptyState message="No viable route found for these currencies and rail filters." />
               ) : null}
               {quote?.routes.map((route, index) => (
-                <RouteCard key={route.id} route={route} rank={index + 1} target={target} />
+                <RouteCard
+                  key={route.id}
+                  route={route}
+                  rank={index + 1}
+                  target={displayInputs.target}
+                />
               ))}
             </div>
             <div className="space-y-5">
-              <ScalingPanel quote={quote} source={source} target={target} />
+              <ScalingPanel
+                quote={quote}
+                source={displayInputs.source}
+                target={displayInputs.target}
+              />
               <GraphPanel routes={quote?.routes ?? []} bestRoute={bestRoute} />
             </div>
           </section>
