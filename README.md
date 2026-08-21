@@ -1,6 +1,6 @@
 # FX RouteDesk
 
-FX RouteDesk is a TypeScript/Next.js take-home project for finding the best multi-leg FX route across fiat brokers and stablecoin venues. A user enters a source currency, target currency, amount, and rail filter; the app returns the top three routes ranked by final recipient amount.
+FX RouteDesk is a TypeScript/Next.js project for finding the best multi-leg FX route across fiat brokers and stablecoin venues. A user enters a source currency, target currency, amount, and rail filter; the app returns the top three routes ranked by final recipient amount.
 
 ## Links
 
